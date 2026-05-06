@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Play, TrendingUp, Users, Award } from 'lucide-react';
 import CourseCard from '../components/CourseCard';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const Dashboard = () => {
   const [courses, setCourses] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     coursesInProgress: 0,
     learningHours: '0h',
@@ -13,18 +15,19 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/courses')
-      .then(res => res.json())
-      .then(data => setCourses(data))
-      .catch(err => console.error(err));
-
-    fetch('http://localhost:5000/api/metrics/student')
-      .then(res => res.json())
-      .then(data => {
-        if (data.stats) setStats(data.stats);
+    Promise.all([
+      fetch('http://localhost:5000/api/courses').then(res => res.json()),
+      fetch('http://localhost:5000/api/metrics/student').then(res => res.json())
+    ])
+      .then(([coursesData, metricsData]) => {
+        setCourses(coursesData);
+        if (metricsData.stats) setStats(metricsData.stats);
       })
-      .catch(err => console.error(err));
+      .catch(err => console.error(err))
+      .finally(() => setIsLoading(false));
   }, []);
+
+  if (isLoading) return <LoadingSpinner message="Setting up your learning environment..." />;
 
   return (
     <motion.div 

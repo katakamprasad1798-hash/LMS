@@ -210,6 +210,28 @@ app.post('/api/courses/:id/quiz/:moduleId', async (req, res) => {
   res.status(200).json({ success: true, quiz: newQuiz });
 });
 
+app.post('/api/courses/:id/quizzes/clear', async (req, res) => {
+  const courseId = parseInt(req.params.id) || req.params.id;
+
+  if (database) {
+    try {
+      await database.ref(`courses/${courseId}/quizzes`).remove();
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  const courseIndex = localDb.mockCourses.findIndex(c => c.id === courseId);
+  if (courseIndex === -1) {
+    return res.status(404).send('Course not found');
+  }
+
+  localDb.mockCourses[courseIndex].quizzes = {};
+  saveLocalDb();
+  res.status(200).json({ success: true });
+});
+
 // Student Routes
 app.get('/api/students', async (req, res) => {
   const data = await getFirebaseData('students', localDb.mockStudents);

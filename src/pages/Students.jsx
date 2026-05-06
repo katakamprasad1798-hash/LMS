@@ -2,16 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, UserPlus, Search, Mail, Calendar, BookOpen, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const Students = () => {
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch('http://localhost:5000/api/students')
       .then(res => res.json())
       .then(data => setStudents(data))
-      .catch(err => console.error(err));
+      .catch(err => console.error(err))
+      .finally(() => setIsLoading(false));
   }, []);
 
   const handleExportCSV = () => {
@@ -32,6 +35,8 @@ const Students = () => {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
   };
+
+  if (isLoading) return <LoadingSpinner message="Fetching student records..." />;
 
   return (
     <motion.div 

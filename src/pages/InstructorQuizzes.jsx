@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Save, Trash2, CheckCircle, HelpCircle, Upload, Download, AlertCircle } from 'lucide-react';
+import { Plus, Save, Trash2, CheckCircle, HelpCircle, Upload, Download, AlertCircle, AlertTriangle } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const InstructorQuizzes = () => {
   const [courses, setCourses] = useState([]);
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [selectedModuleId, setSelectedModuleId] = useState('');
   const [quizData, setQuizData] = useState([]);
+  const [selectedQuestions, setSelectedQuestions] = useState([]); // For bulk deleting specific questions
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const fileInputRef = useRef(null);
 
   // Fetch all courses
@@ -17,13 +20,15 @@ const InstructorQuizzes = () => {
     fetch('http://localhost:5000/api/courses')
       .then(res => res.json())
       .then(data => setCourses(data))
-      .catch(err => console.error(err));
+      .catch(err => console.error(err))
+      .finally(() => setIsInitialLoading(false));
   }, []);
 
   // When course or module is selected, populate quiz data
   useEffect(() => {
+    setSelectedQuestions([]); // reset selection
     if (selectedCourseId && selectedModuleId) {
-      const course = courses.find(c => c.id.toString() === selectedCourseId.toString());
+      const course = courses.find(c => c.id && c.id.toString() === selectedCourseId.toString());
       if (course && course.quizzes && course.quizzes[selectedModuleId]) {
         setQuizData([...course.quizzes[selectedModuleId]]);
       } else {
@@ -39,6 +44,7 @@ const InstructorQuizzes = () => {
   // When course changes, reset module
   useEffect(() => {
     setSelectedModuleId('');
+    setSelectedQuestions([]);
   }, [selectedCourseId]);
 
   const handleAddQuestion = () => {
@@ -69,6 +75,66 @@ const InstructorQuizzes = () => {
   const handleDeleteQuestion = (index) => {
     const newData = quizData.filter((_, i) => i !== index);
     setQuizData(newData);
+    setSelectedQuestions(selectedQuestions.filter(i => i !== index).map(i => i > index ? i - 1 : i));
+  };
+
+  // Bulk Delete specific selected questions
+  const handleBulkDeleteSelected = () => {
+    if (selectedQuestions.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedQuestions.length} selected questions?`)) return;
+    
+    const newData = quizData.filter((_, i) => !selectedQuestions.includes(i));
+    setQuizData(newData);
+    setSelectedQuestions([]);
+  };
+
+  // Toggle question selection
+  const toggleQuestionSelection = (index) => {
+    if (selectedQuestions.includes(index)) {
+      setSelectedQuestions(selectedQuestions.filter(i => i !== index));
+    } else {
+      setSelectedQuestions([...selectedQuestions, index]);
+    }
+  };
+
+  // Select All questions
+  const handleSelectAll = () => {
+    if (selectedQuestions.length === quizData.length) {
+      setSelectedQuestions([]);
+    } else {
+      setSelectedQuestions(quizData.map((_, i) => i));
+    }
+  };
+
+  // Clear ALL Quizzes for the ENTIRE Course
+  const handleClearAllCourseModules = async () => {
+    if (!selectedCourseId) return;
+    if (!window.confirm("WARNING: This will permanently delete ALL quizzes across EVERY module in this course. This cannot be undone. Proceed?")) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/courses/${selectedCourseId}/quizzes/clear`, {
+        method: 'POST'
+      });
+      if (response.ok) {
+        setSuccess('All modules for this course have been cleared.');
+        setQuizData([]);
+        const updatedCourses = courses.map(c => {
+          if (c.id && c.id.toString() === selectedCourseId.toString()) {
+            return { ...c, quizzes: {} };
+          }
+          return c;
+        });
+        setCourses(updatedCourses);
+      } else {
+        setError('Failed to clear course modules.');
+      }
+    } catch (err) {
+      setError('An error occurred.');
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSuccess(''), 3000);
+    }
   };
 
   const handleFileUpload = (e) => {
@@ -87,14 +153,12 @@ const InstructorQuizzes = () => {
       const newQuizzes = [];
       let hasError = false;
 
-      // Skip header if the first line starts with 'Question' or similar
       const startIndex = lines[0].toLowerCase().startsWith('question') ? 1 : 0;
 
       for (let i = startIndex; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
         
-        // Simple regex to split by commas outside of quotes
         const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
         
         if (parts.length < 6) {
@@ -163,7 +227,7 @@ const InstructorQuizzes = () => {
       if (response.ok) {
         setSuccess('Module quiz updated successfully!');
         const updatedCourses = courses.map(c => {
-          if (c.id.toString() === selectedCourseId.toString()) {
+          if (c.id && c.id.toString() === selectedCourseId.toString()) {
             const currentQuizzes = c.quizzes || {};
             return { ...c, quizzes: { ...currentQuizzes, [selectedModuleId]: quizData } };
           }
@@ -178,12 +242,15 @@ const InstructorQuizzes = () => {
     } finally {
       setLoading(false);
       setTimeout(() => setSuccess(''), 3000);
+      setSelectedQuestions([]);
     }
   };
 
-  const selectedCourse = courses.find(c => c.id.toString() === selectedCourseId.toString());
-  const modulesCount = selectedCourse ? selectedCourse.lessons : 0;
+  const selectedCourse = courses.find(c => c.id && c.id.toString() === selectedCourseId.toString());
+  const modulesCount = selectedCourse ? parseInt(selectedCourse.lessons) || 0 : 0;
   const moduleOptions = Array.from({ length: modulesCount }, (_, i) => i + 1);
+
+  if (isInitialLoading) return <LoadingSpinner message="Loading your quizzes..." />;
 
   return (
     <motion.div 
@@ -192,9 +259,19 @@ const InstructorQuizzes = () => {
       transition={{ duration: 0.5 }}
       style={{ display: 'flex', flexDirection: 'column', gap: '32px', maxWidth: '900px' }}
     >
-      <div>
-        <h1 style={{ fontSize: '32px', fontWeight: 700, marginBottom: '8px' }}>Content-Wise Quizzes</h1>
-        <p style={{ color: 'var(--text-muted)' }}>Create, import, and export quizzes for specific modules within your courses.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1 style={{ fontSize: '32px', fontWeight: 700, marginBottom: '8px' }}>Content-Wise Quizzes</h1>
+          <p style={{ color: 'var(--text-muted)' }}>Create, import, and export quizzes for specific modules within your courses.</p>
+        </div>
+        {selectedCourseId && (
+          <button 
+            onClick={handleClearAllCourseModules}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e', border: '1px solid rgba(244, 63, 94, 0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '13px' }}
+          >
+            <AlertTriangle size={16} /> Bulk Delete All Modules
+          </button>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
@@ -237,6 +314,7 @@ const InstructorQuizzes = () => {
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ fontSize: '20px', fontWeight: 600 }}>Module {selectedModuleId} Questions ({quizData.length})</h2>
+            
             <div style={{ display: 'flex', gap: '12px' }}>
               <input 
                 type="file" 
@@ -269,6 +347,29 @@ const InstructorQuizzes = () => {
             </div>
           </div>
 
+          {quizData.length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--glass-inner-darker)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 500 }}>
+                <input 
+                  type="checkbox" 
+                  checked={selectedQuestions.length === quizData.length && quizData.length > 0} 
+                  onChange={handleSelectAll} 
+                  style={{ width: '16px', height: '16px' }}
+                />
+                Select All Questions
+              </label>
+              
+              {selectedQuestions.length > 0 && (
+                <button 
+                  onClick={handleBulkDeleteSelected}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#f43f5e', cursor: 'pointer', fontWeight: 600, fontSize: '13px' }}
+                >
+                  <Trash2 size={16} /> Bulk Delete Selected ({selectedQuestions.length})
+                </button>
+              )}
+            </div>
+          )}
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {quizData.length === 0 ? (
               <div style={{ padding: '48px', textAlign: 'center', background: 'var(--glass-inner)', borderRadius: '16px', border: '1px dashed var(--border)' }}>
@@ -277,7 +378,17 @@ const InstructorQuizzes = () => {
               </div>
             ) : (
               quizData.map((q, qIndex) => (
-                <div key={qIndex} className="glass" style={{ padding: '24px', position: 'relative' }}>
+                <div key={qIndex} className="glass" style={{ padding: '24px', position: 'relative', border: selectedQuestions.includes(qIndex) ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid transparent' }}>
+                  
+                  <div style={{ position: 'absolute', top: '24px', left: '20px' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedQuestions.includes(qIndex)}
+                      onChange={() => toggleQuestionSelection(qIndex)}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                  </div>
+
                   <button 
                     onClick={() => handleDeleteQuestion(qIndex)}
                     style={{ position: 'absolute', top: '24px', right: '24px', background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e', border: 'none', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -285,7 +396,7 @@ const InstructorQuizzes = () => {
                     <Trash2 size={16} />
                   </button>
 
-                  <div style={{ marginBottom: '20px', paddingRight: '48px' }}>
+                  <div style={{ marginBottom: '20px', paddingRight: '48px', paddingLeft: '32px' }}>
                     <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>Question {qIndex + 1}</label>
                     <input 
                       type="text" 
@@ -296,7 +407,7 @@ const InstructorQuizzes = () => {
                     />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px', paddingLeft: '32px' }}>
                     {q.options.map((opt, oIndex) => (
                       <div key={oIndex}>
                         <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Option {oIndex + 1}</label>
@@ -311,7 +422,7 @@ const InstructorQuizzes = () => {
                     ))}
                   </div>
 
-                  <div>
+                  <div style={{ paddingLeft: '32px' }}>
                     <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>Correct Answer</label>
                     <select 
                       value={q.correct}

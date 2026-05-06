@@ -2,21 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Filter, Search } from 'lucide-react';
 import CourseCard from '../components/CourseCard';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const Courses = () => {
   const [courses, setCourses] = useState([]);
   const [filter, setFilter] = useState('All');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch('http://localhost:5000/api/courses')
       .then(res => res.json())
       .then(data => setCourses(data))
-      .catch(err => console.error(err));
+      .catch(err => console.error(err))
+      .finally(() => setIsLoading(false));
   }, []);
 
   const filteredCourses = filter === 'All' 
     ? courses 
     : courses.filter(c => c.category === filter);
+
+  if (isLoading) return <LoadingSpinner message="Loading course library..." />;
 
   return (
     <motion.div 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Play, Clock, BookOpen, Star, CheckCircle, ArrowLeft, Lock } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const CourseDetails = () => {
   const { id } = useParams();
@@ -9,12 +10,14 @@ const CourseDetails = () => {
   const [course, setCourse] = useState(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch(`http://localhost:5000/api/courses/${id}`)
       .then(res => res.json())
       .then(data => setCourse(data))
-      .catch(err => console.error(err));
+      .catch(err => console.error(err))
+      .finally(() => setIsLoading(false));
   }, [id]);
 
   const handleEnroll = () => {
@@ -26,7 +29,8 @@ const CourseDetails = () => {
     }, 1500);
   };
 
-  if (!course) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading course details...</div>;
+  if (isLoading) return <LoadingSpinner message="Fetching course details..." />;
+  if (!course) return <div style={{ padding: '40px', textAlign: 'center' }}>Course not found.</div>;
 
   return (
     <motion.div 

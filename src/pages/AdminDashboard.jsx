@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, DollarSign, BookOpen, Activity, AlertCircle, ArrowUpRight, ArrowDownRight, Server } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
-
   const [platformHealth, setPlatformHealth] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch('http://localhost:5000/api/metrics/admin')
@@ -28,8 +29,11 @@ const AdminDashboard = () => {
           setPlatformHealth(data.platformHealth);
         }
       })
-      .catch(err => console.error(err));
+      .catch(err => console.error(err))
+      .finally(() => setIsLoading(false));
   }, []);
+
+  if (isLoading) return <LoadingSpinner message="Fetching dashboard metrics..." />;
 
   return (
     <motion.div 

@@ -2,36 +2,39 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, BookOpen, Star, DollarSign, Plus, Edit2, Play, CheckCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const InstructorDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState([]);
   const [gradingQueue, setGradingQueue] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/metrics/instructor')
-      .then(res => res.json())
-      .then(data => {
-        if (data.stats) {
+    Promise.all([
+      fetch('http://localhost:5000/api/metrics/instructor').then(res => res.json()),
+      fetch('http://localhost:5000/api/courses').then(res => res.json())
+    ])
+      .then(([metricsData, coursesData]) => {
+        if (metricsData.stats) {
           setStats([
-            { title: 'Total Students', value: data.stats.totalStudents, icon: <Users size={24} color="var(--primary)" /> },
-            { title: 'Course Rating', value: data.stats.courseRating, icon: <Star size={24} color="#f59e0b" /> },
-            { title: 'Revenue', value: data.stats.revenue, icon: <DollarSign size={24} color="#10b981" /> },
-            { title: 'Active Courses', value: data.stats.activeCourses, icon: <BookOpen size={24} color="var(--secondary)" /> }
+            { title: 'Total Students', value: metricsData.stats.totalStudents, icon: <Users size={24} color="var(--primary)" /> },
+            { title: 'Course Rating', value: metricsData.stats.courseRating, icon: <Star size={24} color="#f59e0b" /> },
+            { title: 'Revenue', value: metricsData.stats.revenue, icon: <DollarSign size={24} color="#10b981" /> },
+            { title: 'Active Courses', value: metricsData.stats.activeCourses, icon: <BookOpen size={24} color="var(--secondary)" /> }
           ]);
         }
-        if (data.gradingQueue) {
-          setGradingQueue(data.gradingQueue);
+        if (metricsData.gradingQueue) {
+          setGradingQueue(metricsData.gradingQueue);
         }
+        setCourses(coursesData);
       })
-      .catch(err => console.error(err));
-
-    fetch('http://localhost:5000/api/courses')
-      .then(res => res.json())
-      .then(data => setCourses(data))
-      .catch(err => console.error(err));
+      .catch(err => console.error(err))
+      .finally(() => setIsLoading(false));
   }, []);
+
+  if (isLoading) return <LoadingSpinner message="Fetching your instructor dashboard..." />;
 
   return (
     <motion.div 

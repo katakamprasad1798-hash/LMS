@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Filter, CheckCircle, XCircle, MoreVertical, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const AdminCourses = () => {
   const [courses, setCourses] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch('http://localhost:5000/api/courses')
       .then(res => res.json())
       .then(data => setCourses(data))
-      .catch(err => console.error(err));
+      .catch(err => console.error(err))
+      .finally(() => setIsLoading(false));
   }, []);
 
   const getStatusBadge = (status) => {
@@ -21,6 +24,8 @@ const AdminCourses = () => {
       default: return null;
     }
   };
+
+  if (isLoading) return <LoadingSpinner message="Loading global course directory..." />;
 
   return (
     <motion.div 
