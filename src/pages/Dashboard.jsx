@@ -5,11 +5,24 @@ import CourseCard from '../components/CourseCard';
 
 const Dashboard = () => {
   const [courses, setCourses] = useState([]);
+  const [stats, setStats] = useState({
+    coursesInProgress: 0,
+    learningHours: '0h',
+    communityRank: '-',
+    certificatesEarned: 0
+  });
 
   useEffect(() => {
     fetch('http://localhost:5000/api/courses')
       .then(res => res.json())
       .then(data => setCourses(data))
+      .catch(err => console.error(err));
+
+    fetch('http://localhost:5000/api/metrics/student')
+      .then(res => res.json())
+      .then(data => {
+        if (data.stats) setStats(data.stats);
+      })
       .catch(err => console.error(err));
   }, []);
 
@@ -29,8 +42,8 @@ const Dashboard = () => {
             You've completed 75% of your weekly goal. Keep pushing to unlock your next certification!
           </p>
           <div style={{ display: 'flex', gap: '16px' }}>
-            <button className="btn-primary">View Progress</button>
-            <button className="btn-secondary">Explore New</button>
+            <button className="btn-primary" title="View detailed learning progress">View Progress</button>
+            <button className="btn-secondary" title="Explore new courses">Explore New</button>
           </div>
         </div>
         
@@ -41,10 +54,10 @@ const Dashboard = () => {
 
       {/* Stats Section */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-        <StatCard icon={<Play size={20} />} label="Courses in Progress" value="3" color="#6366f1" />
-        <StatCard icon={<TrendingUp size={20} />} label="Learning Hours" value="42.5h" color="#a855f7" />
-        <StatCard icon={<Users size={20} />} label="Community Rank" value="#128" color="#f43f5e" />
-        <StatCard icon={<Award size={20} />} label="Certificates Earned" value="12" color="#10b981" />
+        <StatCard icon={<Play size={20} />} label="Courses in Progress" value={stats.coursesInProgress} color="#6366f1" />
+        <StatCard icon={<TrendingUp size={20} />} label="Learning Hours" value={stats.learningHours} color="#a855f7" />
+        <StatCard icon={<Users size={20} />} label="Community Rank" value={stats.communityRank} color="#f43f5e" />
+        <StatCard icon={<Award size={20} />} label="Certificates Earned" value={stats.certificatesEarned} color="#10b981" />
       </div>
 
       {/* Course List Section */}

@@ -3,7 +3,7 @@ import { Search, Bell, User as UserIcon } from 'lucide-react';
 
 const Navbar = () => {
   return (
-    <div className="navbar" style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div className="navbar" style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, background: 'var(--glass-bg)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border)' }}>
       <div className="search-bar glass" style={{ display: 'flex', alignItems: 'center', padding: '10px 20px', width: '400px', gap: '12px' }}>
         <Search size={18} color="var(--text-muted)" />
         <input 

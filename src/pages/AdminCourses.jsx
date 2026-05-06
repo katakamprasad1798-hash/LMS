@@ -90,7 +90,7 @@ const AdminCourses = () => {
                     <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} title="Preview Course">
                       <Eye size={20} />
                     </button>
-                    <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                    <button title="More Actions" style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
                       <MoreVertical size={20} />
                     </button>
                   </div>

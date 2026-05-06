@@ -25,13 +25,22 @@ const Students = () => {
           <h1 style={{ fontSize: '32px', fontWeight: 700, marginBottom: '8px' }}>Student Management</h1>
           <p style={{ color: 'var(--text-muted)' }}>Overview of all enrolled students and their progress.</p>
         </div>
-        <button 
-          className="btn-primary" 
-          style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
-          onClick={() => navigate('/admin/add-student')}
-        >
-          <UserPlus size={18} /> Add Student
-        </button>
+        <div style={{ display: 'flex', gap: '16px' }}>
+          <button 
+            className="glass" 
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 20px', borderRadius: '12px', color: 'var(--text-main)', border: '1px solid var(--border)', cursor: 'pointer', fontWeight: 600 }}
+            onClick={() => navigate('/admin/courses')}
+          >
+            <BookOpen size={18} color="var(--secondary)" /> Manage Courses
+          </button>
+          <button 
+            className="btn-primary" 
+            style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
+            onClick={() => navigate('/admin/add-student')}
+          >
+            <UserPlus size={18} /> Add Student
+          </button>
+        </div>
       </div>
 
       <div className="glass" style={{ padding: '24px', marginBottom: '32px' }}>

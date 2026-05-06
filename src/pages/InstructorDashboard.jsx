@@ -7,6 +7,7 @@ const InstructorDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState([]);
   const [gradingQueue, setGradingQueue] = useState([]);
+  const [courses, setCourses] = useState([]);
 
   useEffect(() => {
     fetch('http://localhost:5000/api/metrics/instructor')
@@ -25,12 +26,12 @@ const InstructorDashboard = () => {
         }
       })
       .catch(err => console.error(err));
-  }, []);
 
-  const courses = [
-    { id: 1, title: 'Advanced React Patterns', students: 842, rating: 4.8, status: 'Published' },
-    { id: 2, title: 'Fullstack Next.js', students: 406, rating: 4.9, status: 'Published' }
-  ];
+    fetch('http://localhost:5000/api/courses')
+      .then(res => res.json())
+      .then(data => setCourses(data))
+      .catch(err => console.error(err));
+  }, []);
 
   return (
     <motion.div 
@@ -92,10 +93,10 @@ const InstructorDashboard = () => {
                   </td>
                   <td style={{ padding: '16px 12px', textAlign: 'right' }}>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                      <button style={{ background: 'var(--glass-inner-darker)', border: 'none', padding: '8px', borderRadius: '8px', color: 'var(--text-main)', cursor: 'pointer' }}>
+                      <button title="Edit Course" style={{ background: 'var(--glass-inner-darker)', border: 'none', padding: '8px', borderRadius: '8px', color: 'var(--text-main)', cursor: 'pointer' }}>
                         <Edit2 size={16} />
                       </button>
-                      <button style={{ background: 'var(--glass-inner-darker)', border: 'none', padding: '8px', borderRadius: '8px', color: 'var(--text-main)', cursor: 'pointer' }}>
+                      <button title="Preview Course" style={{ background: 'var(--glass-inner-darker)', border: 'none', padding: '8px', borderRadius: '8px', color: 'var(--text-main)', cursor: 'pointer' }}>
                         <Play size={16} />
                       </button>
                     </div>
@@ -122,7 +123,7 @@ const InstructorDashboard = () => {
                 <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>
                   {item.course} - {item.assignment}
                 </div>
-                <button className="btn-secondary" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '8px' }}>
+                <button title="Grade Assignment" className="btn-secondary" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '8px' }}>
                   <CheckCircle size={16} /> Grade Now
                 </button>
               </div>

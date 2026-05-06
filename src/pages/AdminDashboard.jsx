@@ -7,6 +7,8 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
 
+  const [platformHealth, setPlatformHealth] = useState([]);
+
   useEffect(() => {
     fetch('http://localhost:5000/api/metrics/admin')
       .then(res => res.json())
@@ -22,16 +24,12 @@ const AdminDashboard = () => {
         if (data.activity) {
           setRecentActivity(data.activity);
         }
+        if (data.platformHealth) {
+          setPlatformHealth(data.platformHealth);
+        }
       })
       .catch(err => console.error(err));
   }, []);
-
-  const platformHealth = [
-    { service: 'Database Server', status: 'Operational', uptime: '99.99%' },
-    { service: 'Authentication API', status: 'Operational', uptime: '100%' },
-    { service: 'Video CDN', status: 'Degraded', uptime: '98.50%' },
-    { service: 'Payment Gateway', status: 'Operational', uptime: '99.99%' }
-  ];
 
   return (
     <motion.div 
@@ -56,10 +54,10 @@ const AdminDashboard = () => {
           <div style={{ padding: '8px', background: 'var(--glass-inner-darker)', borderRadius: '8px' }}><Users size={20} color="var(--primary)" /></div>
           Manage Users
         </Link>
-        <Link to="/admin/courses" className="glass" style={{ flex: 1, padding: '16px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-main)', fontWeight: 600, borderRadius: '12px', border: '1px solid var(--border)' }}>
-          <div style={{ padding: '8px', background: 'var(--glass-inner-darker)', borderRadius: '8px' }}><BookOpen size={20} color="var(--secondary)" /></div>
-          Manage Courses
-        </Link>
+        <button onClick={() => document.getElementById('analytics').scrollIntoView({ behavior: 'smooth' })} className="glass" style={{ flex: 1, padding: '16px', border: 'none', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-main)', fontWeight: 600, borderRadius: '12px', border: '1px solid var(--border)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '16px' }}>
+          <div style={{ padding: '8px', background: 'var(--glass-inner-darker)', borderRadius: '8px' }}><Activity size={20} color="var(--secondary)" /></div>
+          View Analytics
+        </button>
         <Link to="/settings" className="glass" style={{ flex: 1, padding: '16px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-main)', fontWeight: 600, borderRadius: '12px', border: '1px solid var(--border)' }}>
           <div style={{ padding: '8px', background: 'var(--glass-inner-darker)', borderRadius: '8px' }}><Server size={20} color="#10b981" /></div>
           System Settings
@@ -87,7 +85,7 @@ const AdminDashboard = () => {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
+      <div id="analytics" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px', scrollMarginTop: '24px' }}>
         {/* Activity Feed */}
         <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -9,9 +9,14 @@ const RoleSelection = () => {
 
   const handleContinue = () => {
     if (selectedRole) {
-      // In a real app, this is where you'd update the user's role in the DB
-      // For now, we just route them to the dashboard
-      navigate('/');
+      localStorage.setItem('userRole', selectedRole);
+      if (selectedRole === 'admin') {
+        window.location.href = '/admin';
+      } else if (selectedRole === 'instructor') {
+        window.location.href = '/instructor';
+      } else {
+        window.location.href = '/';
+      }
     }
   };
 

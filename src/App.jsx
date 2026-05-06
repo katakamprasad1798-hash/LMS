@@ -20,7 +20,14 @@ import ManageEnrollments from './pages/ManageEnrollments';
 import AdminDashboard from './pages/AdminDashboard';
 import Settings from './pages/Settings';
 import AdminCourses from './pages/AdminCourses';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Navigate } from 'react-router-dom';
+
+const RoleBasedDashboard = () => {
+  const role = localStorage.getItem('userRole');
+  if (role === 'admin') return <Navigate to="/admin" replace />;
+  if (role === 'instructor') return <Navigate to="/instructor" replace />;
+  return <Dashboard />;
+};
 
 function AppContent() {
   const location = useLocation();
@@ -46,7 +53,7 @@ function AppContent() {
           <Navbar />
           <div className="page-content" style={{ padding: '24px', flex: 1 }}>
             <Routes>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<RoleBasedDashboard />} />
               <Route path="/courses" element={<Courses />} />
               <Route path="/course/:id" element={<CourseDetails />} />
               <Route path="/learn/:id" element={<LearningSession />} />
