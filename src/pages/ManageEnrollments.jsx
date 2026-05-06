@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Mail, Trash2, Search, Filter } from 'lucide-react';
+import { Users, Mail, Trash2, Search, Filter, UserPlus, Download } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const ManageEnrollments = () => {
+  const navigate = useNavigate();
   const [enrollments, setEnrollments] = useState([]);
 
   useEffect(() => {
@@ -11,6 +13,25 @@ const ManageEnrollments = () => {
       .then(data => setEnrollments(data))
       .catch(err => console.error(err));
   }, []);
+
+  const handleExportCSV = () => {
+    if (enrollments.length === 0) return;
+    const headers = ['Name', 'Email', 'Course', 'Enrolled Date', 'Progress'];
+    const csvRows = [
+      headers.join(','),
+      ...enrollments.map(e => `"${e.name}","${e.email}","${e.course}","${e.enrolledDate}","${e.progress}%"`)
+    ];
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'enrollments_export.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
 
   return (
     <motion.div 
@@ -34,9 +55,21 @@ const ManageEnrollments = () => {
             style={{ width: '100%', padding: '12px 16px 12px 48px', background: 'var(--glass-inner)', border: '1px solid var(--border)', borderRadius: '12px', color: 'var(--text-main)', outline: 'none' }}
           />
         </div>
-        <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px' }}>
-          <Filter size={18} /> Filter by Course
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px' }} onClick={handleExportCSV}>
+            <Download size={18} /> Export CSV
+          </button>
+          <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px' }}>
+            <Filter size={18} /> Filter by Course
+          </button>
+          <button 
+            className="btn-primary" 
+            onClick={() => navigate('/bulk-add-students')}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px' }}
+          >
+            <UserPlus size={18} /> Bulk Enroll
+          </button>
+        </div>
       </div>
 
       {/* Enrollments Table */}

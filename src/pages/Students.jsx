@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, UserPlus, Search, Mail, Calendar, BookOpen } from 'lucide-react';
+import { Users, UserPlus, Search, Mail, Calendar, BookOpen, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Students = () => {
@@ -13,6 +13,25 @@ const Students = () => {
       .then(data => setStudents(data))
       .catch(err => console.error(err));
   }, []);
+
+  const handleExportCSV = () => {
+    if (students.length === 0) return;
+    const headers = ['Name', 'Email', 'Joined Date', 'Courses', 'Status'];
+    const csvRows = [
+      headers.join(','),
+      ...students.map(s => `"${s.name}","${s.email}","${s.joinedAt}","${s.courses}","${s.status}"`)
+    ];
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'students_export.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
 
   return (
     <motion.div 
@@ -32,6 +51,20 @@ const Students = () => {
             onClick={() => navigate('/admin/courses')}
           >
             <BookOpen size={18} color="var(--secondary)" /> Manage Courses
+          </button>
+          <button 
+            className="btn-secondary" 
+            style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
+            onClick={handleExportCSV}
+          >
+            <Download size={18} /> Export CSV
+          </button>
+          <button 
+            className="btn-secondary" 
+            style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
+            onClick={() => navigate('/bulk-add-students')}
+          >
+            <Users size={18} /> Bulk Upload
           </button>
           <button 
             className="btn-primary" 

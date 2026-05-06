@@ -66,7 +66,7 @@ const LearningSession = () => {
           )}
 
           {activeTab === 'Quiz' && (
-            <QuizComponent questions={course.quiz} courseId={course.id} />
+            <QuizComponent questions={course.quizzes ? course.quizzes[activeLesson] : []} courseId={course.id} />
           )}
 
           {activeTab === 'Assignments' && (

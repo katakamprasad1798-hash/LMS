@@ -9,6 +9,7 @@ import LearningSession from './pages/LearningSession';
 import AddCourse from './pages/AddCourse';
 import Students from './pages/Students';
 import AddStudent from './pages/AddStudent';
+import BulkAddStudents from './pages/BulkAddStudents';
 import StudentQuizzes from './pages/StudentQuizzes';
 import LandingPage from './pages/LandingPage';
 import AuthGateway from './pages/AuthGateway';
@@ -17,6 +18,7 @@ import Profile from './pages/Profile';
 import Certificate from './pages/Certificate';
 import InstructorDashboard from './pages/InstructorDashboard';
 import ManageEnrollments from './pages/ManageEnrollments';
+import InstructorQuizzes from './pages/InstructorQuizzes';
 import AdminDashboard from './pages/AdminDashboard';
 import Settings from './pages/Settings';
 import AdminCourses from './pages/AdminCourses';
@@ -60,11 +62,13 @@ function AppContent() {
               <Route path="/admin/add-course" element={<AddCourse />} />
               <Route path="/admin/students" element={<Students />} />
               <Route path="/admin/add-student" element={<AddStudent />} />
+              <Route path="/bulk-add-students" element={<BulkAddStudents />} />
               <Route path="/quizzes" element={<StudentQuizzes />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/certificate/:courseId" element={<Certificate />} />
               <Route path="/instructor" element={<InstructorDashboard />} />
               <Route path="/instructor/enrollments" element={<ManageEnrollments />} />
+              <Route path="/instructor/quizzes" element={<InstructorQuizzes />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/courses" element={<AdminCourses />} />
               <Route path="/settings" element={<Settings />} />

@@ -181,25 +181,130 @@ app.post('/api/courses', async (req, res) => {
   res.status(201).json(courseWithId);
 });
 
+app.post('/api/courses/:id/quiz/:moduleId', async (req, res) => {
+  const courseId = parseInt(req.params.id) || req.params.id;
+  const moduleId = req.params.moduleId;
+  const newQuiz = req.body.quiz || [];
+
+  if (database) {
+    try {
+      const courseRef = database.ref(`courses/${courseId}`);
+      await courseRef.child('quizzes').child(moduleId).set(newQuiz);
+      return res.status(200).json({ success: true, quiz: newQuiz });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  const courseIndex = localDb.mockCourses.findIndex(c => c.id === courseId);
+  if (courseIndex === -1) {
+    return res.status(404).send('Course not found');
+  }
+
+  if (!localDb.mockCourses[courseIndex].quizzes) {
+    localDb.mockCourses[courseIndex].quizzes = {};
+  }
+  localDb.mockCourses[courseIndex].quizzes[moduleId] = newQuiz;
+  
+  saveLocalDb();
+  res.status(200).json({ success: true, quiz: newQuiz });
+});
+
 // Student Routes
 app.get('/api/students', async (req, res) => {
   const data = await getFirebaseData('students', localDb.mockStudents);
   res.json(data);
 });
 
-app.post('/api/students', async (req, res) => {
-  const newStudent = { ...req.body, id: Date.now(), joinedAt: new Date().toISOString().split('T')[0], status: "Active" };
+app.post('/api/students/bulk', async (req, res) => {
+  const students = req.body.students;
+  if (!Array.isArray(students)) {
+    return res.status(400).json({ error: 'Expected an array of students' });
+  }
+
+  const processedStudents = [];
+  const processedEnrollments = [];
+
+  students.forEach((student, index) => {
+    const id = Date.now() + index;
+    processedStudents.push({
+      ...student,
+      id: id,
+      joinedAt: new Date().toISOString().split('T')[0],
+      status: student.status || "Active",
+      courses: parseInt(student.courses) || 0
+    });
+
+    processedEnrollments.push({
+      id: id + 10000,
+      name: student.name,
+      email: student.email,
+      course: 'Pending Course Assignment',
+      progress: 0,
+      enrolledDate: new Date().toISOString().split('T')[0]
+    });
+  });
+
   if (database) {
     try {
-      const ref = database.ref('students').push();
-      newStudent.id = ref.key;
-      await ref.set(newStudent);
+      const updates = {};
+      processedStudents.forEach((student, idx) => {
+        const studentKey = database.ref('students').push().key;
+        student.id = studentKey;
+        updates[`students/${studentKey}`] = student;
+
+        const enrollment = processedEnrollments[idx];
+        const enrollmentKey = database.ref('enrollments').push().key;
+        enrollment.id = enrollmentKey;
+        updates[`enrollments/${enrollmentKey}`] = enrollment;
+      });
+      await database.ref().update(updates);
+      return res.status(201).json(processedStudents);
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  localDb.mockStudents.push(...processedStudents);
+  localDb.mockEnrollments.push(...processedEnrollments);
+  saveLocalDb();
+  res.status(201).json(processedStudents);
+});
+
+app.post('/api/students', async (req, res) => {
+  const id = Date.now();
+  const newStudent = { ...req.body, id, joinedAt: new Date().toISOString().split('T')[0], status: "Active" };
+  
+  const newEnrollment = {
+    id: id + 10000,
+    name: newStudent.name,
+    email: newStudent.email,
+    course: 'Pending Course Assignment',
+    progress: 0,
+    enrolledDate: new Date().toISOString().split('T')[0]
+  };
+
+  if (database) {
+    try {
+      const studentRef = database.ref('students').push();
+      newStudent.id = studentRef.key;
+      
+      const enrollmentRef = database.ref('enrollments').push();
+      newEnrollment.id = enrollmentRef.key;
+
+      const updates = {};
+      updates[`students/${studentRef.key}`] = newStudent;
+      updates[`enrollments/${enrollmentRef.key}`] = newEnrollment;
+
+      await database.ref().update(updates);
       return res.status(201).json(newStudent);
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }
   }
+  
   localDb.mockStudents.push(newStudent);
+  localDb.mockEnrollments.push(newEnrollment);
   saveLocalDb();
   res.status(201).json(newStudent);
 });

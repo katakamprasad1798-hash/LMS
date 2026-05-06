@@ -32,6 +32,7 @@ const Sidebar = () => {
           <>
             <NavItem to="/instructor" icon={<Layout size={20} />} label="Instructor Portal" />
             <NavItem to="/instructor/enrollments" icon={<Users size={20} />} label="Manage Enrollments" />
+            <NavItem to="/instructor/quizzes" icon={<HelpCircle size={20} />} label="Manage Quizzes" />
           </>
         )}
 
