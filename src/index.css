@@ -17,6 +17,18 @@
   --glass-blur: blur(16px);
 }
 
+[data-theme="dark"] {
+  --bg-main: #0f172a;
+  --bg-card: rgba(30, 41, 59, 0.7);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(30, 41, 59, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-inner: rgba(255, 255, 255, 0.05);
+  --glass-inner-darker: rgba(255, 255, 255, 0.1);
+}
+
 * {
   margin: 0;
   padding: 0;

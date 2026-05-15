@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, CheckCircle, XCircle, MoreVertical, Eye } from 'lucide-react';
+import { Search, Filter, CheckCircle, XCircle, MoreVertical, Eye, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const AdminCourses = () => {
   const [courses, setCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
     fetch('http://localhost:5000/api/courses')
@@ -24,6 +25,40 @@ const AdminCourses = () => {
       default: return null;
     }
   };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedIds(courses.map(c => c.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} courses?`)) return;
+
+    try {
+      const response = await fetch('http://localhost:5000/api/courses/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds })
+      });
+      if (response.ok) {
+        setCourses(prev => prev.filter(c => !selectedIds.includes(c.id)));
+        setSelectedIds([]);
+      } else {
+        console.error('Failed to bulk delete');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
 
   if (isLoading) return <LoadingSpinner message="Loading global course directory..." />;
 
@@ -52,6 +87,15 @@ const AdminCourses = () => {
           />
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
+          {selectedIds.length > 0 && (
+            <button 
+              className="btn-primary" 
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--accent)' }}
+              onClick={handleBulkDelete}
+            >
+              <Trash2 size={18} /> Bulk Delete ({selectedIds.length})
+            </button>
+          )}
           <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px' }}>
             <Filter size={18} /> Filter Status
           </button>
@@ -63,6 +107,9 @@ const AdminCourses = () => {
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--glass-inner-darker)' }}>
+              <th style={{ padding: '16px 24px', width: '40px' }}>
+                <input type="checkbox" onChange={handleSelectAll} checked={courses.length > 0 && selectedIds.length === courses.length} />
+              </th>
               <th style={{ padding: '16px 24px', fontWeight: 600, color: 'var(--text-muted)' }}>Course Title</th>
               <th style={{ padding: '16px 24px', fontWeight: 600, color: 'var(--text-muted)' }}>Instructor</th>
               <th style={{ padding: '16px 24px', fontWeight: 600, color: 'var(--text-muted)' }}>Category</th>
@@ -72,7 +119,10 @@ const AdminCourses = () => {
           </thead>
           <tbody>
             {courses.map(course => (
-              <tr key={course.id} style={{ borderBottom: '1px solid var(--border)' }}>
+              <tr key={course.id} style={{ borderBottom: '1px solid var(--border)', background: selectedIds.includes(course.id) ? 'var(--glass-inner)' : 'transparent' }}>
+                <td style={{ padding: '20px 24px' }}>
+                  <input type="checkbox" checked={selectedIds.includes(course.id)} onChange={() => handleSelect(course.id)} />
+                </td>
                 <td style={{ padding: '20px 24px' }}>
                   <div style={{ fontWeight: 600 }}>{course.title}</div>
                   <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>{course.students} enrollments • {course.price}</div>

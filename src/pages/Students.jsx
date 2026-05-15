@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, UserPlus, Search, Mail, Calendar, BookOpen, Download } from 'lucide-react';
+import { Users, UserPlus, Search, Mail, Calendar, BookOpen, Download, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -8,6 +8,7 @@ const Students = () => {
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
     fetch('http://localhost:5000/api/students')
@@ -36,6 +37,40 @@ const Students = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedIds(students.map(s => s.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} students?`)) return;
+
+    try {
+      const response = await fetch('http://localhost:5000/api/students/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds })
+      });
+      if (response.ok) {
+        setStudents(prev => prev.filter(s => !selectedIds.includes(s.id)));
+        setSelectedIds([]);
+      } else {
+        console.error('Failed to bulk delete');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
   if (isLoading) return <LoadingSpinner message="Fetching student records..." />;
 
   return (
@@ -50,6 +85,15 @@ const Students = () => {
           <p style={{ color: 'var(--text-muted)' }}>Overview of all enrolled students and their progress.</p>
         </div>
         <div style={{ display: 'flex', gap: '16px' }}>
+          {selectedIds.length > 0 && (
+            <button 
+              className="btn-primary" 
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--accent)' }}
+              onClick={handleBulkDelete}
+            >
+              <Trash2 size={18} /> Bulk Delete ({selectedIds.length})
+            </button>
+          )}
           <button 
             className="glass" 
             style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 20px', borderRadius: '12px', color: 'var(--text-main)', border: '1px solid var(--border)', cursor: 'pointer', fontWeight: 600 }}
@@ -96,6 +140,9 @@ const Students = () => {
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--glass-inner-darker)' }}>
+              <th style={{ padding: '20px', width: '40px' }}>
+                <input type="checkbox" onChange={handleSelectAll} checked={students.length > 0 && selectedIds.length === students.length} />
+              </th>
               <th style={{ padding: '20px' }}>Student</th>
               <th style={{ padding: '20px' }}>Joined Date</th>
               <th style={{ padding: '20px' }}>Courses</th>
@@ -105,7 +152,10 @@ const Students = () => {
           </thead>
           <tbody>
             {students.map(student => (
-              <tr key={student.id} style={{ borderBottom: '1px solid var(--border)', transition: 'all 0.2s' }}>
+              <tr key={student.id} style={{ borderBottom: '1px solid var(--border)', transition: 'all 0.2s', background: selectedIds.includes(student.id) ? 'var(--glass-inner)' : 'transparent' }}>
+                <td style={{ padding: '20px' }}>
+                  <input type="checkbox" checked={selectedIds.includes(student.id)} onChange={() => handleSelect(student.id)} />
+                </td>
                 <td style={{ padding: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>

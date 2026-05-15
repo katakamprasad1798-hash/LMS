@@ -8,6 +8,7 @@ const ManageEnrollments = () => {
   const navigate = useNavigate();
   const [enrollments, setEnrollments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
     fetch('http://localhost:5000/api/enrollments')
@@ -36,6 +37,40 @@ const ManageEnrollments = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedIds(enrollments.map(en => en.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to remove ${selectedIds.length} enrollments?`)) return;
+
+    try {
+      const response = await fetch('http://localhost:5000/api/enrollments/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds })
+      });
+      if (response.ok) {
+        setEnrollments(prev => prev.filter(en => !selectedIds.includes(en.id)));
+        setSelectedIds([]);
+      } else {
+        console.error('Failed to bulk delete');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
   if (isLoading) return <LoadingSpinner message="Fetching enrollments..." />;
 
   return (
@@ -61,6 +96,15 @@ const ManageEnrollments = () => {
           />
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
+          {selectedIds.length > 0 && (
+            <button 
+              className="btn-primary" 
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--accent)' }}
+              onClick={handleBulkDelete}
+            >
+              <Trash2 size={18} /> Bulk Remove ({selectedIds.length})
+            </button>
+          )}
           <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px' }} onClick={handleExportCSV}>
             <Download size={18} /> Export CSV
           </button>
@@ -82,6 +126,9 @@ const ManageEnrollments = () => {
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--glass-inner-darker)' }}>
+              <th style={{ padding: '16px 24px', width: '40px' }}>
+                <input type="checkbox" onChange={handleSelectAll} checked={enrollments.length > 0 && selectedIds.length === enrollments.length} />
+              </th>
               <th style={{ padding: '16px 24px', fontWeight: 600, color: 'var(--text-muted)' }}>Student</th>
               <th style={{ padding: '16px 24px', fontWeight: 600, color: 'var(--text-muted)' }}>Course</th>
               <th style={{ padding: '16px 24px', fontWeight: 600, color: 'var(--text-muted)' }}>Enrolled Date</th>
@@ -91,7 +138,10 @@ const ManageEnrollments = () => {
           </thead>
           <tbody>
             {enrollments.map(enrollment => (
-              <tr key={enrollment.id} style={{ borderBottom: '1px solid var(--border)' }}>
+              <tr key={enrollment.id} style={{ borderBottom: '1px solid var(--border)', background: selectedIds.includes(enrollment.id) ? 'var(--glass-inner)' : 'transparent' }}>
+                <td style={{ padding: '20px 24px' }}>
+                  <input type="checkbox" checked={selectedIds.includes(enrollment.id)} onChange={() => handleSelect(enrollment.id)} />
+                </td>
                 <td style={{ padding: '20px 24px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' }}>

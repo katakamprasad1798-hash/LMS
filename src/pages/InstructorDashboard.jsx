@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, BookOpen, Star, DollarSign, Plus, Edit2, Play, CheckCircle } from 'lucide-react';
+import { Users, BookOpen, Star, DollarSign, Plus, Edit2, Play, CheckCircle, Trash2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -10,6 +10,7 @@ const InstructorDashboard = () => {
   const [gradingQueue, setGradingQueue] = useState([]);
   const [courses, setCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
     Promise.all([
@@ -33,6 +34,39 @@ const InstructorDashboard = () => {
       .catch(err => console.error(err))
       .finally(() => setIsLoading(false));
   }, []);
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedIds(courses.map(c => c.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} courses?`)) return;
+
+    try {
+      const response = await fetch('http://localhost:5000/api/courses/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds })
+      });
+      if (response.ok) {
+        setCourses(prev => prev.filter(c => !selectedIds.includes(c.id)));
+        setSelectedIds([]);
+      } else {
+        console.error('Failed to bulk delete');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   if (isLoading) return <LoadingSpinner message="Fetching your instructor dashboard..." />;
 
@@ -73,11 +107,21 @@ const InstructorDashboard = () => {
         <div className="glass" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <h2 style={{ fontSize: '20px', fontWeight: 600 }}>My Courses</h2>
-            <button style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer' }}>View All</button>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              {selectedIds.length > 0 && (
+                <button onClick={handleBulkDelete} style={{ background: 'var(--accent)', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600 }}>
+                  <Trash2 size={14} /> Bulk Delete
+                </button>
+              )}
+              <button style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer' }}>View All</button>
+            </div>
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+                <th style={{ padding: '12px', width: '40px' }}>
+                  <input type="checkbox" onChange={handleSelectAll} checked={courses.length > 0 && selectedIds.length === courses.length} />
+                </th>
                 <th style={{ padding: '12px', fontWeight: 500 }}>Course</th>
                 <th style={{ padding: '12px', fontWeight: 500 }}>Students</th>
                 <th style={{ padding: '12px', fontWeight: 500 }}>Rating</th>
@@ -86,7 +130,10 @@ const InstructorDashboard = () => {
             </thead>
             <tbody>
               {courses.map(course => (
-                <tr key={course.id} style={{ borderBottom: '1px solid var(--glass-inner)' }}>
+                <tr key={course.id} style={{ borderBottom: '1px solid var(--glass-inner)', background: selectedIds.includes(course.id) ? 'var(--glass-inner)' : 'transparent' }}>
+                  <td style={{ padding: '16px 12px' }}>
+                    <input type="checkbox" checked={selectedIds.includes(course.id)} onChange={() => handleSelect(course.id)} />
+                  </td>
                   <td style={{ padding: '16px 12px', fontWeight: 500 }}>{course.title}</td>
                   <td style={{ padding: '16px 12px', color: 'var(--text-muted)' }}>{course.students}</td>
                   <td style={{ padding: '16px 12px', color: 'var(--text-muted)' }}>

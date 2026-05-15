@@ -232,6 +232,26 @@ app.post('/api/courses/:id/quizzes/clear', async (req, res) => {
   res.status(200).json({ success: true });
 });
 
+app.post('/api/courses/bulk-delete', async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids)) return res.status(400).json({ error: 'Expected an array of ids' });
+
+  if (database) {
+    try {
+      const updates = {};
+      ids.forEach(id => updates[`courses/${id}`] = null);
+      await database.ref().update(updates);
+      return res.status(200).json({ success: true, deleted: ids });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  localDb.mockCourses = localDb.mockCourses.filter(c => !ids.includes(c.id));
+  saveLocalDb();
+  res.status(200).json({ success: true, deleted: ids });
+});
+
 // Student Routes
 app.get('/api/students', async (req, res) => {
   const data = await getFirebaseData('students', localDb.mockStudents);
@@ -329,6 +349,47 @@ app.post('/api/students', async (req, res) => {
   localDb.mockEnrollments.push(newEnrollment);
   saveLocalDb();
   res.status(201).json(newStudent);
+});
+
+// Dashboard Endpoints
+app.post('/api/students/bulk-delete', async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids)) return res.status(400).json({ error: 'Expected an array of ids' });
+
+  if (database) {
+    try {
+      const updates = {};
+      ids.forEach(id => updates[`students/${id}`] = null);
+      await database.ref().update(updates);
+      return res.status(200).json({ success: true, deleted: ids });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  localDb.mockStudents = localDb.mockStudents.filter(s => !ids.includes(s.id));
+  saveLocalDb();
+  res.status(200).json({ success: true, deleted: ids });
+});
+
+app.post('/api/enrollments/bulk-delete', async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids)) return res.status(400).json({ error: 'Expected an array of ids' });
+
+  if (database) {
+    try {
+      const updates = {};
+      ids.forEach(id => updates[`enrollments/${id}`] = null);
+      await database.ref().update(updates);
+      return res.status(200).json({ success: true, deleted: ids });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  localDb.mockEnrollments = localDb.mockEnrollments.filter(e => !ids.includes(e.id));
+  saveLocalDb();
+  res.status(200).json({ success: true, deleted: ids });
 });
 
 // Dashboard Endpoints

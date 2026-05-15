@@ -1,7 +1,24 @@
-import React from 'react';
-import { Search, Bell, User as UserIcon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Bell, User as UserIcon, Moon, Sun } from 'lucide-react';
 
 const Navbar = () => {
+  const [isDark, setIsDark] = useState(() => {
+    return localStorage.getItem('theme') === 'dark' || 
+      (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  });
+
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDark]);
+
+  const toggleTheme = () => setIsDark(!isDark);
+
   return (
     <div className="navbar" style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, background: 'var(--glass-bg)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border)' }}>
       <div className="search-bar glass" style={{ display: 'flex', alignItems: 'center', padding: '10px 20px', width: '400px', gap: '12px' }}>
@@ -14,6 +31,9 @@ const Navbar = () => {
       </div>
 
       <div className="nav-actions" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+        <button className="glass" onClick={toggleTheme} style={{ width: '45px', height: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          {isDark ? <Sun size={20} color="var(--text-muted)" /> : <Moon size={20} color="var(--text-muted)" />}
+        </button>
         <button className="glass" style={{ width: '45px', height: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <Bell size={20} color="var(--text-muted)" />
         </button>
