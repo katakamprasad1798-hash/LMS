@@ -11,8 +11,9 @@ const StudentQuizzes = () => {
     fetch('http://localhost:5000/api/courses')
       .then(res => res.json())
       .then(data => {
+        const validData = Array.isArray(data) ? data.filter(c => c && c.id && c.title) : [];
         const availableQuizzes = [];
-        data.forEach(course => {
+        validData.forEach(course => {
           if (course.quizzes) {
             Object.keys(course.quizzes).forEach(moduleId => {
               const quizArray = course.quizzes[moduleId];

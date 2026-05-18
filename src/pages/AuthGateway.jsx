@@ -9,6 +9,11 @@ const AuthGateway = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email');
+    const name = formData.get('name') || email.split('@')[0];
+    localStorage.setItem('userName', name);
+    localStorage.setItem('userEmail', email);
     // Simulate successful auth and proceed to Role Selection
     navigate('/select-role');
   };
@@ -37,6 +42,7 @@ const AuthGateway = () => {
         {/* Toggle Login / Register */}
         <div style={{ display: 'flex', background: 'var(--glass-inner-darker)', padding: '4px', borderRadius: '12px', marginBottom: '32px' }}>
           <button 
+            type="button"
             onClick={() => setIsLogin(true)}
             style={{ 
               flex: 1, padding: '10px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, transition: 'all 0.3s',
@@ -48,6 +54,7 @@ const AuthGateway = () => {
             Login
           </button>
           <button 
+            type="button"
             onClick={() => setIsLogin(false)}
             style={{ 
               flex: 1, padding: '10px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, transition: 'all 0.3s',
@@ -68,6 +75,7 @@ const AuthGateway = () => {
                 <User size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
                 <input 
                   type="text" 
+                  name="name"
                   required 
                   placeholder="John Doe"
                   style={{ width: '100%', padding: '14px 16px 14px 44px', background: 'var(--glass-inner-darker)', border: '1px solid var(--border)', borderRadius: '12px', color: 'var(--text-main)', outline: 'none' }}
@@ -82,6 +90,7 @@ const AuthGateway = () => {
               <Mail size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
               <input 
                 type="email" 
+                name="email"
                 required 
                 placeholder="you@example.com"
                 style={{ width: '100%', padding: '14px 16px 14px 44px', background: 'var(--glass-inner-darker)', border: '1px solid var(--border)', borderRadius: '12px', color: 'var(--text-main)', outline: 'none' }}
@@ -98,6 +107,7 @@ const AuthGateway = () => {
               <Lock size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
               <input 
                 type="password" 
+                name="password"
                 required 
                 placeholder="••••••••"
                 style={{ width: '100%', padding: '14px 16px 14px 44px', background: 'var(--glass-inner-darker)', border: '1px solid var(--border)', borderRadius: '12px', color: 'var(--text-main)', outline: 'none' }}

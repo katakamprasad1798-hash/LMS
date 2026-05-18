@@ -19,7 +19,10 @@ const InstructorQuizzes = () => {
   useEffect(() => {
     fetch('http://localhost:5000/api/courses')
       .then(res => res.json())
-      .then(data => setCourses(data))
+      .then(data => {
+        const validCourses = Array.isArray(data) ? data.filter(c => c && c.id && c.title) : [];
+        setCourses(validCourses);
+      })
       .catch(err => console.error(err))
       .finally(() => setIsInitialLoading(false));
   }, []);

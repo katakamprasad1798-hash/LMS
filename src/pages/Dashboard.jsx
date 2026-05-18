@@ -1,10 +1,77 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Play, TrendingUp, Users, Award } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Play, TrendingUp, Users, Award, LayoutDashboard, Compass, User, UserPlus, Key, BookOpen, HelpCircle, FileText } from 'lucide-react';
 import CourseCard from '../components/CourseCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 
+const JourneyNode = ({ icon, label, status, color, onClick }) => {
+  const isBlinking = status === 'Active';
+  return (
+    <motion.div 
+      whileHover={{ scale: 1.04, y: -2 }}
+      onClick={onClick}
+      style={{
+        width: '100%',
+        maxWidth: '250px',
+        padding: '14px 18px',
+        background: '#ffffff',
+        border: `1px solid ${isBlinking ? '#2563eb' : '#e2e8f0'}`,
+        borderRadius: '16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        cursor: 'pointer',
+        boxShadow: isBlinking ? '0 8px 20px -4px rgba(37, 99, 235, 0.15)' : '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+        transition: 'all 0.2s',
+        zIndex: 5
+      }}
+    >
+      <div style={{ 
+        width: '38px', 
+        height: '38px', 
+        borderRadius: '10px', 
+        background: `${color}15`, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        color: color,
+        flexShrink: 0
+      }}>
+        {icon}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+        <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+        <span style={{ 
+          fontSize: '10px', 
+          fontWeight: 700, 
+          color: color,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px'
+        }}>
+          {isBlinking && (
+            <motion.span 
+              animate={{ scale: [1, 1.5, 1], opacity: [1, 0.4, 1] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+              style={{ 
+                width: '6px', 
+                height: '6px', 
+                borderRadius: '50%', 
+                background: '#2563eb', 
+                display: 'inline-block'
+              }} 
+            />
+          )}
+          {status}
+        </span>
+      </div>
+    </motion.div>
+  );
+};
+
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -20,12 +87,21 @@ const Dashboard = () => {
       fetch('http://localhost:5000/api/metrics/student').then(res => res.json())
     ])
       .then(([coursesData, metricsData]) => {
-        setCourses(coursesData);
-        if (metricsData.stats) setStats(metricsData.stats);
+        const validCourses = Array.isArray(coursesData) ? coursesData.filter(c => c && c.id && c.title) : [];
+        setCourses(validCourses);
+        if (metricsData && metricsData.stats) setStats(metricsData.stats);
       })
       .catch(err => console.error(err))
       .finally(() => setIsLoading(false));
   }, []);
+
+  const handleViewContent = () => {
+    if (courses && courses.length > 0) {
+      navigate(`/learn/${courses[0].id}`);
+    } else {
+      navigate('/courses');
+    }
+  };
 
   if (isLoading) return <LoadingSpinner message="Setting up your learning environment..." />;
 
@@ -39,14 +115,14 @@ const Dashboard = () => {
       <div className="glass" style={{ padding: '40px', marginBottom: '40px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'relative', zIndex: 2 }}>
           <h1 style={{ fontSize: '36px', fontWeight: 700, marginBottom: '16px' }}>
-            Welcome back, <span className="gradient-text">Prasad!</span>
+            Welcome back, <span className="gradient-text">{localStorage.getItem('userName') || 'Prasad'}!</span>
           </h1>
           <p style={{ fontSize: '16px', color: 'var(--text-muted)', maxWidth: '500px', marginBottom: '24px' }}>
             You've completed 75% of your weekly goal. Keep pushing to unlock your next certification!
           </p>
           <div style={{ display: 'flex', gap: '16px' }}>
-            <button className="btn-primary" title="View detailed learning progress">View Progress</button>
-            <button className="btn-secondary" title="Explore new courses">Explore New</button>
+            <button className="btn-primary" onClick={() => navigate('/profile')} title="View detailed learning progress">View Progress</button>
+            <button className="btn-secondary" onClick={() => navigate('/courses')} title="Explore new courses">Explore New</button>
           </div>
         </div>
         
@@ -61,6 +137,152 @@ const Dashboard = () => {
         <StatCard icon={<TrendingUp size={20} />} label="Learning Hours" value={stats.learningHours} color="#a855f7" />
         <StatCard icon={<Users size={20} />} label="Community Rank" value={stats.communityRank} color="#f43f5e" />
         <StatCard icon={<Award size={20} />} label="Certificates Earned" value={stats.certificatesEarned} color="#10b981" />
+      </div>
+
+      {/* Visual Learning Journey Map */}
+      <div className="glass" style={{ padding: '32px', marginBottom: '40px', background: '#ffffff', borderRadius: '16px', border: '1px solid var(--border)' }}>
+        <div style={{ marginBottom: '32px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', margin: 0 }}>My Interactive Journey Map</h2>
+          <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>Click any step on your path below to navigate instantly.</p>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
+          
+          {/* Level 1: Student Dashboard */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2 }}>
+            <JourneyNode 
+              icon={<LayoutDashboard size={18} />} 
+              label="Student Dashboard" 
+              status="Completed" 
+              color="#10b981" 
+              onClick={() => navigate('/')} 
+            />
+            <div style={{ height: '24px', width: '2px', background: '#cbd5e1', position: 'relative' }}>
+              <div style={{ position: 'absolute', bottom: '-4px', left: '-3px', borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '6px solid #cbd5e1' }}></div>
+            </div>
+          </div>
+
+          {/* Connectors for Level 2 Split */}
+          <div style={{ display: 'flex', justifyContent: 'center', width: '100%', maxWidth: '600px', position: 'relative', marginBottom: '8px' }}>
+            <div style={{ position: 'absolute', top: '-16px', left: '25%', right: '25%', height: '2px', background: '#cbd5e1' }}></div>
+            <div style={{ position: 'absolute', top: '-16px', left: '25%', height: '16px', width: '2px', background: '#cbd5e1' }}></div>
+            <div style={{ position: 'absolute', top: '-16px', right: '25%', height: '16px', width: '2px', background: '#cbd5e1' }}></div>
+          </div>
+
+          {/* Level 2: Split Branch (Browse Courses & Profile Management) */}
+          <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%', maxWidth: '700px', gap: '40px', zIndex: 2 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+              <JourneyNode 
+                icon={<Compass size={18} />} 
+                label="Browse Courses" 
+                status="Completed" 
+                color="#10b981" 
+                onClick={() => navigate('/courses')} 
+              />
+              <div style={{ height: '28px', width: '2px', background: '#cbd5e1', position: 'relative' }}>
+                <div style={{ position: 'absolute', bottom: '-4px', left: '-3px', borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '6px solid #cbd5e1' }}></div>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+              <JourneyNode 
+                icon={<User size={18} />} 
+                label="Profile Management" 
+                status="Completed" 
+                color="#10b981" 
+                onClick={() => navigate('/profile')} 
+              />
+            </div>
+          </div>
+
+          {/* Level 3: Enroll in Course */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '700px', zIndex: 2 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                <JourneyNode 
+                  icon={<UserPlus size={18} />} 
+                  label="Enroll in Course" 
+                  status="Completed" 
+                  color="#10b981" 
+                  onClick={() => navigate('/courses')} 
+                />
+                <div style={{ height: '28px', width: '2px', background: '#cbd5e1', position: 'relative' }}>
+                  <div style={{ position: 'absolute', bottom: '-4px', left: '-3px', borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '6px solid #cbd5e1' }}></div>
+                </div>
+              </div>
+              <div style={{ flex: 1 }}></div>
+            </div>
+          </div>
+
+          {/* Level 4: Access Course */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '700px', zIndex: 2 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                <JourneyNode 
+                  icon={<Key size={18} />} 
+                  label="Access Course" 
+                  status="Active" 
+                  color="#2563eb" 
+                  onClick={() => navigate('/courses')} 
+                />
+                <div style={{ height: '28px', width: '2px', background: '#cbd5e1', position: 'relative' }}>
+                  <div style={{ position: 'absolute', bottom: '-4px', left: '-3px', borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '6px solid #cbd5e1' }}></div>
+                </div>
+              </div>
+              <div style={{ flex: 1 }}></div>
+            </div>
+          </div>
+
+          {/* Level 5: View Content */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '700px', zIndex: 2 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                <JourneyNode 
+                  icon={<BookOpen size={18} />} 
+                  label="View Content" 
+                  status="Active" 
+                  color="#2563eb" 
+                  onClick={handleViewContent} 
+                />
+                <div style={{ height: '24px', width: '2px', background: '#cbd5e1', position: 'relative' }}>
+                  <div style={{ position: 'absolute', bottom: '-4px', left: '-3px', borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '6px solid #cbd5e1' }}></div>
+                </div>
+              </div>
+              <div style={{ flex: 1 }}></div>
+            </div>
+          </div>
+
+          {/* Connectors for Level 6 Split */}
+          <div style={{ display: 'flex', justifyContent: 'center', width: '100%', maxWidth: '600px', position: 'relative', marginBottom: '8px' }}>
+            <div style={{ position: 'absolute', top: '-16px', left: '25%', right: '25%', height: '2px', background: '#cbd5e1' }}></div>
+            <div style={{ position: 'absolute', top: '-16px', left: '25%', height: '16px', width: '2px', background: '#cbd5e1' }}></div>
+            <div style={{ position: 'absolute', top: '-16px', right: '25%', height: '16px', width: '2px', background: '#cbd5e1' }}></div>
+          </div>
+
+          {/* Level 6: Split Branch (Attempt Quiz & Submit Assignment) */}
+          <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%', maxWidth: '700px', gap: '40px', zIndex: 2 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+              <JourneyNode 
+                icon={<HelpCircle size={18} />} 
+                label="Attempt Quiz" 
+                status="Unlocked" 
+                color="#64748b" 
+                onClick={() => navigate('/quizzes')} 
+              />
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+              <JourneyNode 
+                icon={<FileText size={18} />} 
+                label="Submit Assignment" 
+                status="Unlocked" 
+                color="#64748b" 
+                onClick={handleViewContent} 
+              />
+            </div>
+          </div>
+
+        </div>
       </div>
 
       {/* Course List Section */}

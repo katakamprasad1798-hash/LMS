@@ -22,7 +22,7 @@ const RoleSelection = () => {
 
   const roles = [
     { id: 'student', icon: <User size={32} />, title: 'Student', desc: 'I want to browse and take courses.', color: 'var(--primary)' },
-    { id: 'instructor', icon: <Briefcase size={32} />, title: 'Instructor', desc: 'I want to create and teach courses.', color: 'var(--secondary)' },
+    { id: 'instructor', icon: <Briefcase size={32} />, title: 'Instructor', desc: 'I want to create and teach courses.', color: '#6366f1' },
     { id: 'admin', icon: <Shield size={32} />, title: 'Administrator', desc: 'I manage the platform and users.', color: '#f43f5e' }
   ];
 

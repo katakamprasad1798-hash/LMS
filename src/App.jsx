@@ -22,6 +22,8 @@ import InstructorQuizzes from './pages/InstructorQuizzes';
 import AdminDashboard from './pages/AdminDashboard';
 import Settings from './pages/Settings';
 import AdminCourses from './pages/AdminCourses';
+import AllStudentsReports from './pages/AllStudentsReports';
+import AdminFeedback from './pages/AdminFeedback';
 import { useLocation, Navigate } from 'react-router-dom';
 
 const RoleBasedDashboard = () => {
@@ -71,6 +73,9 @@ function AppContent() {
               <Route path="/instructor/quizzes" element={<InstructorQuizzes />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/courses" element={<AdminCourses />} />
+              <Route path="/admin/enrollments" element={<ManageEnrollments />} />
+              <Route path="/admin/feedback" element={<AdminFeedback />} />
+              <Route path="/reports" element={<AllStudentsReports />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>
           </div>

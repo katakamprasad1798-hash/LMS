@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Users, ArrowLeft, Upload, AlertCircle, CheckCircle, FileText } from 'lucide-react';
+import { Users, ArrowLeft, Upload, AlertCircle, CheckCircle, FileText, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const BulkAddStudents = () => {
@@ -11,6 +11,9 @@ const BulkAddStudents = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const itemsPerPage = 5;
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -66,8 +69,19 @@ const BulkAddStudents = () => {
 
     if (!hasError) {
       setParsedStudents(students);
+      setCurrentPage(1);
     }
   };
+
+  const filteredStudentsList = parsedStudents.filter(s => 
+    (s.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (s.email || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentStudents = filteredStudentsList.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredStudentsList.length / itemsPerPage);
 
   const handleSubmit = async () => {
     if (parsedStudents.length === 0) {
@@ -185,26 +199,97 @@ const BulkAddStudents = () => {
 
         {parsedStudents.length > 0 && (
           <div style={{ marginTop: '40px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>Preview ({parsedStudents.length} Students)</h3>
-            <div style={{ border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ background: 'var(--glass-inner-darker)', borderBottom: '1px solid var(--border)' }}>
-                    <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Name</th>
-                    <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Email</th>
-                    <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Courses</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {parsedStudents.map((student, idx) => (
-                    <tr key={idx} style={{ borderBottom: idx !== parsedStudents.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                      <td style={{ padding: '12px 16px', fontWeight: 500 }}>{student.name}</td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>{student.email}</td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>{student.courses}</td>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Preview ({parsedStudents.length} Students)</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--glass-inner)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                <Search size={14} color="var(--text-muted)" />
+                <input 
+                  type="text" 
+                  placeholder="Search preview..." 
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '13px', width: '150px' }}
+                />
+              </div>
+            </div>
+            
+            <div className="table-container" style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--glass-inner-darker)', borderBottom: '1px solid var(--border)' }}>
+                      <th style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', padding: '16px 20px', letterSpacing: '0.5px' }}>Student Info</th>
+                      <th style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', padding: '16px 20px', letterSpacing: '0.5px' }}>Enrolled Courses</th>
+                      <th style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', padding: '16px 20px', letterSpacing: '0.5px' }}>Import Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {currentStudents.map((student, idx) => (
+                      <tr key={idx} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }}>
+                        <td style={{ padding: '16px 20px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--primary)', fontSize: '13px' }}>
+                              {student.name.charAt(0)}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '14px' }}>{student.name}</div>
+                              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{student.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '16px 20px' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '14px' }}>{student.courses} Courses</div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Assigned</div>
+                        </td>
+                        <td style={{ padding: '16px 20px' }}>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '4px 10px',
+                            borderRadius: '20px',
+                            background: 'rgba(16, 185, 129, 0.04)',
+                            border: '1px solid rgba(16, 185, 129, 0.2)',
+                            color: '#10b981',
+                            fontSize: '11.5px',
+                            fontWeight: 600
+                          }}>
+                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
+                            Ready
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', background: 'var(--bg-card)' }}>
+                  <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
+                    Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredStudentsList.length)} of {filteredStudentsList.length} entries
+                  </span>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button 
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="btn-secondary" 
+                      style={{ padding: '6px 12px', fontSize: '12px', opacity: currentPage === 1 ? 0.5 : 1 }}
+                    >
+                      Previous
+                    </button>
+                    <button 
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="btn-secondary" 
+                      style={{ padding: '6px 12px', fontSize: '12px', opacity: currentPage === totalPages ? 0.5 : 1 }}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

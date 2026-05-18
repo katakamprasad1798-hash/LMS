@@ -36,75 +36,63 @@ const DB_FILE = path.join(__dirname, 'db.json');
 let localDb = {};
 
 const defaultDb = {
-  mockCourses: [
-    {
-      id: 1778054631755,
-      title: "Modern UI/UX Design Fundamentals",
-      instructor: "Alex Rivers",
-      category: "Design",
-      status: "Published",
-      students: 1248,
-      rating: 4.9,
-      price: 89.99,
-      duration: "12h 45m",
-      lessons: 24,
-      facilities: ["HD Video", "Source Files", "Certificate", "Lifetime Access"],
-      image: "https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&q=80&w=2000",
-      quiz: [{ question: "What does UI stand for?", options: ["User Identity", "User Interface", "User Integration"], correct: 1 }]
-    },
-    {
-      id: 1778054631756,
-      title: "Advanced React Architecture",
-      instructor: "Sarah Jenkins",
-      category: "Development",
-      status: "Pending Review",
-      students: 0,
-      rating: 0,
-      price: 120.00,
-      duration: "10h 00m",
-      lessons: 15,
-      facilities: ["HD Video", "Code Repo"],
-      image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&q=80&w=2000",
-      quiz: []
-    }
-  ],
+  mockCourses: [],
   mockStudents: [],
-  mockEnrollments: [
-    { id: 1, name: 'Jane Doe', email: 'jane@example.com', course: 'Modern UI/UX Design Fundamentals', progress: 75, enrolledDate: '2024-05-01' },
-    { id: 2, name: 'John Smith', email: 'john@example.com', course: 'Advanced React Architecture', progress: 100, enrolledDate: '2024-04-15' },
-    { id: 3, name: 'Alice Johnson', email: 'alice@example.com', course: 'Fullstack Node.js Masterclass', progress: 30, enrolledDate: '2024-05-05' }
-  ],
+  mockEnrollments: [],
   mockAdminStats: {
-    revenue: '$84,590',
-    activeUsers: '12,450',
-    courses: '142',
-    systemLoad: '24%'
+    revenue: '$0',
+    activeUsers: '0',
+    courses: '0',
+    systemLoad: '0%'
   },
   mockPlatformHealth: [
-    { service: 'Database Server', status: 'Operational', uptime: '99.99%' },
+    { service: 'Database Server', status: 'Operational', uptime: '100%' },
     { service: 'Authentication API', status: 'Operational', uptime: '100%' },
-    { service: 'Video CDN', status: 'Degraded', uptime: '98.50%' },
-    { service: 'Payment Gateway', status: 'Operational', uptime: '99.99%' }
+    { service: 'Video CDN', status: 'Operational', uptime: '100%' },
+    { service: 'Payment Gateway', status: 'Operational', uptime: '100%' }
   ],
   mockStudentStats: {
-    coursesInProgress: 3,
-    learningHours: '42.5h',
-    communityRank: '#128',
-    certificatesEarned: 12
+    coursesInProgress: 0,
+    learningHours: '0h',
+    communityRank: 'N/A',
+    certificatesEarned: 0
   },
-  mockAdminActivity: [
-    { id: 1, user: 'Alex Rivers', action: 'published a new course', target: 'Modern UI/UX Design', time: '2 mins ago', type: 'course' },
-    { id: 2, user: 'Sarah Jenkins', action: 'purchased', target: 'Advanced React Architecture', time: '15 mins ago', type: 'purchase' }
-  ],
+  mockAdminActivity: [],
   mockInstructorStats: {
-    totalStudents: '1,248',
-    courseRating: '4.8',
-    revenue: '$12,450',
-    activeCourses: '3'
+    totalStudents: '0',
+    courseRating: '0',
+    revenue: '$0',
+    activeCourses: '0'
   },
-  mockGradingQueue: [
-    { id: 1, student: 'Jane Doe', course: 'Modern UI/UX Design', assignment: 'Portfolio Review', submitted: '2 hours ago', status: 'pending' },
-    { id: 2, student: 'John Smith', course: 'Advanced React Architecture', assignment: 'Final Project', submitted: '5 hours ago', status: 'pending' }
+  mockGradingQueue: [],
+  mockFeedback: [
+    {
+      id: "feed-1",
+      courseId: "-N_course_2",
+      courseName: "Advanced React Architecture",
+      studentName: "Alice Green",
+      rating: 5,
+      comment: "This course is exceptionally well structured! The deep dives into advanced component design and patterns were extremely practical and helpful.",
+      date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    },
+    {
+      id: "feed-2",
+      courseId: "-N_course_2",
+      courseName: "Advanced React Architecture",
+      studentName: "Bob Miller",
+      rating: 4,
+      comment: "Great content and very advanced. The compound components module was a bit challenging but highly rewarding.",
+      date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    },
+    {
+      id: "feed-3",
+      courseId: "-N_course_1",
+      courseName: "Intro to Product Design",
+      studentName: "Anonymous",
+      rating: 5,
+      comment: "Absolutely stellar! The instructor explains Figma workflows beautifully. Highly recommend to anyone transitioning to UI/UX.",
+      date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    }
   ]
 };
 
@@ -134,12 +122,19 @@ const saveLocalDb = () => {
 const getFirebaseData = async (path, fallback) => {
   if (database) {
     try {
-      const snapshot = await database.ref(path).once('value');
-      const data = snapshot.val();
-      if (!data) return fallback;
-      return Array.isArray(fallback) ? Object.values(data) : data;
+      const firebasePromise = database.ref(path).once('value').then(snapshot => {
+        const data = snapshot.val();
+        if (!data) return fallback;
+        return Array.isArray(fallback) ? Object.values(data) : data;
+      });
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Firebase timeout')), 2000)
+      );
+
+      return await Promise.race([firebasePromise, timeoutPromise]);
     } catch (error) {
-      console.error(`Firebase GET error at ${path}:`, error);
+      console.warn(`Firebase GET fallback at ${path}:`, error.message);
       return fallback;
     }
   }
@@ -230,6 +225,29 @@ app.post('/api/courses/:id/quizzes/clear', async (req, res) => {
   localDb.mockCourses[courseIndex].quizzes = {};
   saveLocalDb();
   res.status(200).json({ success: true });
+});
+
+app.put('/api/courses/:id', async (req, res) => {
+  const courseId = parseInt(req.params.id) || req.params.id;
+  const updatedData = req.body;
+
+  if (database) {
+    try {
+      await database.ref(`courses/${courseId}`).update(updatedData);
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  const courseIndex = localDb.mockCourses.findIndex(c => c.id === courseId);
+  if (courseIndex === -1) {
+    return res.status(404).send('Course not found');
+  }
+
+  localDb.mockCourses[courseIndex] = { ...localDb.mockCourses[courseIndex], ...updatedData };
+  saveLocalDb();
+  res.status(200).json(localDb.mockCourses[courseIndex]);
 });
 
 app.post('/api/courses/bulk-delete', async (req, res) => {
@@ -351,6 +369,27 @@ app.post('/api/students', async (req, res) => {
   res.status(201).json(newStudent);
 });
 
+app.put('/api/students/:id', async (req, res) => {
+  const id = req.params.id;
+  const updatedData = req.body;
+
+  if (database) {
+    try {
+      await database.ref(`students/${id}`).update(updatedData);
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  const studentIndex = localDb.mockStudents.findIndex(s => s.id.toString() === id.toString());
+  if (studentIndex === -1) return res.status(404).send('Student not found');
+
+  localDb.mockStudents[studentIndex] = { ...localDb.mockStudents[studentIndex], ...updatedData };
+  saveLocalDb();
+  res.status(200).json(localDb.mockStudents[studentIndex]);
+});
+
 // Dashboard Endpoints
 app.post('/api/students/bulk-delete', async (req, res) => {
   const { ids } = req.body;
@@ -414,6 +453,103 @@ app.get('/api/metrics/instructor', async (req, res) => {
   const stats = await getFirebaseData('instructorStats', localDb.mockInstructorStats);
   const gradingQueue = await getFirebaseData('gradingQueue', localDb.mockGradingQueue);
   res.json({ stats, gradingQueue });
+});
+
+// Feedback Endpoint
+app.post('/api/feedback', async (req, res) => {
+  const newFeedback = {
+    id: Date.now(),
+    courseId: req.body.courseId,
+    courseName: req.body.courseName,
+    studentName: req.body.studentName || 'Anonymous',
+    rating: parseInt(req.body.rating) || 5,
+    comment: req.body.comment || '',
+    date: new Date().toISOString().split('T')[0]
+  };
+
+  if (database) {
+    try {
+      const ref = database.ref('feedback').push();
+      newFeedback.id = ref.key;
+      await ref.set(newFeedback);
+      
+      // Update course rating dynamically in Firebase if exists
+      const courseRef = database.ref(`courses/${req.body.courseId}`);
+      const courseSnap = await courseRef.once('value');
+      if (courseSnap.exists()) {
+        const feedbackSnap = await database.ref('feedback').once('value');
+        const allFeedback = Object.values(feedbackSnap.val() || {});
+        const courseFeedbacks = allFeedback.filter(f => f.courseId === req.body.courseId);
+        const avg = courseFeedbacks.reduce((acc, curr) => acc + curr.rating, 0) / (courseFeedbacks.length || 1);
+        await courseRef.update({ rating: parseFloat(avg.toFixed(1)) });
+      }
+      
+      return res.status(201).json(newFeedback);
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  if (!localDb.mockFeedback) {
+    localDb.mockFeedback = [];
+  }
+  localDb.mockFeedback.push(newFeedback);
+
+  // Update course rating dynamically in local fallback
+  const courseIndex = localDb.mockCourses.findIndex(c => c.id.toString() === req.body.courseId.toString());
+  if (courseIndex !== -1) {
+    const courseFeedbacks = localDb.mockFeedback.filter(f => f.courseId.toString() === req.body.courseId.toString());
+    const avg = courseFeedbacks.reduce((acc, curr) => acc + curr.rating, 0) / (courseFeedbacks.length || 1);
+    localDb.mockCourses[courseIndex].rating = parseFloat(avg.toFixed(1));
+  }
+
+  saveLocalDb();
+  res.status(201).json(newFeedback);
+});
+
+// GET all feedbacks
+app.get('/api/feedback', async (req, res) => {
+  const data = await getFirebaseData('feedback', localDb.mockFeedback || []);
+  res.json(data);
+});
+
+// DELETE a feedback
+app.delete('/api/feedback/:id', async (req, res) => {
+  const id = req.params.id;
+
+  if (database) {
+    try {
+      await database.ref(`feedback/${id}`).remove();
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  localDb.mockFeedback = (localDb.mockFeedback || []).filter(f => f.id.toString() !== id.toString());
+  saveLocalDb();
+  res.status(200).json({ success: true });
+});
+
+// DELETE bulk feedbacks
+app.post('/api/feedback/bulk-delete', async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids)) return res.status(400).json({ error: 'Expected an array of ids' });
+
+  if (database) {
+    try {
+      const updates = {};
+      ids.forEach(id => updates[`feedback/${id}`] = null);
+      await database.ref().update(updates);
+      return res.status(200).json({ success: true, deleted: ids });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  localDb.mockFeedback = (localDb.mockFeedback || []).filter(f => !ids.includes(f.id));
+  saveLocalDb();
+  res.status(200).json({ success: true, deleted: ids });
 });
 
 app.listen(PORT, () => {

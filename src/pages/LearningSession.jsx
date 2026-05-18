@@ -1,40 +1,96 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Play, FileText, MessageSquare, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, FileText, MessageSquare, ChevronDown, AlertCircle, Star } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const LearningSession = () => {
   const { id } = useParams();
   const [course, setCourse] = useState(null);
   const [activeLesson, setActiveLesson] = useState(1);
   const [activeTab, setActiveTab] = useState('Overview');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    setIsLoading(true);
+    setError(null);
     fetch(`http://localhost:5000/api/courses/${id}`)
-      .then(res => res.json())
-      .then(data => setCourse(data))
-      .catch(err => console.error(err));
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Course session could not be retrieved.');
+        }
+        return res.json();
+      })
+      .then(data => {
+        setCourse(data);
+      })
+      .catch(err => {
+        console.error(err);
+        setError(err.message || 'Failed to load course session.');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, [id]);
 
-  if (!course) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading session...</div>;
+  if (isLoading) {
+    return <LoadingSpinner message="Setting up your active course session..." />;
+  }
+
+  if (error || !course) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          padding: '80px 20px',
+          textAlign: 'center',
+          maxWidth: '500px',
+          margin: '40px auto'
+        }}
+        className="glass"
+      >
+        <div style={{ 
+          width: '56px', 
+          height: '56px', 
+          borderRadius: '50%', 
+          background: 'rgba(244, 63, 94, 0.1)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          color: '#f43f5e',
+          marginBottom: '20px'
+        }}>
+          <AlertCircle size={28} />
+        </div>
+        <h2 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '10px' }}>
+          Course Session Not Found
+        </h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
+          We could not load this learning session. This can happen if the database was refreshed or the course is no longer available.
+        </p>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <Link to="/" className="btn-secondary" style={{ textDecoration: 'none', padding: '10px 20px' }}>
+            Go to Dashboard
+          </Link>
+          <Link to="/courses" className="btn-primary" style={{ textDecoration: 'none', padding: '10px 20px' }}>
+            Browse Courses
+          </Link>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <div style={{ height: 'calc(100vh - 120px)', display: 'flex', gap: '24px', overflow: 'hidden' }}>
       {/* Video Content Area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px', overflowY: 'auto' }}>
-        <div className="glass" style={{ width: '100%', aspectRatio: '16/9', overflow: 'hidden', position: 'relative', background: '#000' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              <Play size={40} fill="white" color="white" />
-            </div>
-          </div>
-          <img 
-            src={course.image} 
-            alt="Video placeholder" 
-            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4 }}
-          />
-        </div>
-
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>Module {activeLesson}: Advanced Component Architectures</h1>
@@ -54,11 +110,9 @@ const LearningSession = () => {
           <div style={{ display: 'flex', gap: '32px', borderBottom: '1px solid var(--border)', marginBottom: '24px' }}>
             <Tab active={activeTab === 'Overview'} onClick={() => setActiveTab('Overview')} label="Overview" />
             <Tab active={activeTab === 'Quiz'} onClick={() => setActiveTab('Quiz')} label="Quiz" />
-            <Tab active={activeTab === 'Assignments'} onClick={() => setActiveTab('Assignments')} label="Assignments" />
-            <Tab active={activeTab === 'Resources'} onClick={() => setActiveTab('Resources')} label="Resources" />
-            <Tab active={activeTab === 'Discussion'} onClick={() => setActiveTab('Discussion')} label="Discussion" />
+            <Tab active={activeTab === 'Feedback'} onClick={() => setActiveTab('Feedback')} label="Give Feedback" />
           </div>
-          
+
           {activeTab === 'Overview' && (
             <div style={{ color: 'var(--text-muted)', lineHeight: '1.8' }}>
               In this lesson, we dive deep into advanced component patterns. We'll explore Higher-Order Components, Render Props, and the Compound Component pattern. By the end of this module, you'll be able to build highly flexible and reusable UI libraries.
@@ -69,8 +123,8 @@ const LearningSession = () => {
             <QuizComponent questions={course.quizzes ? course.quizzes[activeLesson] : []} courseId={course.id} />
           )}
 
-          {activeTab === 'Assignments' && (
-            <AssignmentComponent />
+          {activeTab === 'Feedback' && (
+            <FeedbackComponent courseId={course.id} courseName={course.title} />
           )}
         </div>
       </div>
@@ -82,12 +136,12 @@ const LearningSession = () => {
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
           {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-            <div 
-              key={i} 
+            <div
+              key={i}
               onClick={() => setActiveLesson(i)}
-              style={{ 
-                padding: '16px', 
-                borderRadius: '12px', 
+              style={{
+                padding: '16px',
+                borderRadius: '12px',
                 marginBottom: '8px',
                 cursor: 'pointer',
                 background: activeLesson === i ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
@@ -120,6 +174,208 @@ const LearningSession = () => {
   );
 };
 
+const FeedbackComponent = ({ courseId, courseName }) => {
+  const [rating, setRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [studentName, setStudentName] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!comment.trim()) {
+      setError('Please provide a short comment or review of the course.');
+      return;
+    }
+    setError('');
+    setSubmitting(true);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courseId,
+          courseName,
+          studentName: isAnonymous ? 'Anonymous' : studentName || 'Prasad R.',
+          rating,
+          comment
+        })
+      });
+
+      if (response.ok) {
+        setSubmitted(true);
+      } else {
+        setError('Failed to submit feedback. Please try again.');
+      }
+    } catch (err) {
+      setError('A connection error occurred.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        style={{ textAlign: 'center', padding: '40px 20px' }}
+      >
+        <div style={{ 
+          width: '64px', 
+          height: '64px', 
+          borderRadius: '50%', 
+          background: 'rgba(16, 185, 129, 0.1)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          color: '#10b981',
+          margin: '0 auto 24px auto',
+          boxShadow: '0 8px 24px rgba(16, 185, 129, 0.15)'
+        }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <h3 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px' }}>Thank You for Your Feedback!</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '400px', margin: '0 auto 24px auto', lineHeight: 1.6 }}>
+          Your feedback helps us refine our course curriculum and deliver the ultimate learning experience.
+        </p>
+        <button 
+          onClick={() => {
+            setSubmitted(false);
+            setComment('');
+            setRating(5);
+            setIsAnonymous(false);
+          }}
+          className="btn-secondary"
+        >
+          Submit Another Review
+        </button>
+      </motion.div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div>
+        <h3 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '4px' }}>Course Feedback</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Share your thoughts and rating about this learning experience.</p>
+      </div>
+
+      {/* Interactive Stars Rating */}
+      <div>
+        <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '10px' }}>
+          Course Rating
+        </label>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              onClick={() => setRating(star)}
+              onMouseEnter={() => setHoverRating(star)}
+              onMouseLeave={() => setHoverRating(0)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, outline: 'none' }}
+            >
+              <Star 
+                size={32} 
+                fill={(hoverRating || rating) >= star ? '#fb923c' : 'none'} 
+                color={(hoverRating || rating) >= star ? '#fb923c' : 'var(--text-muted)'} 
+                style={{ transition: 'transform 0.2s ease, fill 0.2s ease', transform: (hoverRating || rating) >= star ? 'scale(1.1)' : 'scale(1)' }}
+              />
+            </button>
+          ))}
+          <span style={{ marginLeft: '12px', fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)' }}>
+            {rating === 5 ? 'Excellent' : rating === 4 ? 'Good' : rating === 3 ? 'Average' : rating === 2 ? 'Poor' : 'Terrible'}
+          </span>
+        </div>
+      </div>
+
+      {/* Name Input */}
+      {!isAnonymous && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)' }}>Your Name</label>
+          <input 
+            type="text" 
+            placeholder="e.g. Prasad Radhika" 
+            value={studentName}
+            onChange={(e) => setStudentName(e.target.value)}
+            style={{ 
+              width: '100%', 
+              maxWidth: '400px',
+              padding: '12px 16px', 
+              background: 'var(--glass-inner-darker)', 
+              border: '1px solid var(--border)', 
+              borderRadius: '10px', 
+              color: 'var(--text-main)', 
+              outline: 'none',
+              fontSize: '13.5px'
+            }}
+          />
+        </div>
+      )}
+
+      {/* Anonymous Toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <input 
+          type="checkbox" 
+          id="anonymous-checkbox" 
+          checked={isAnonymous}
+          onChange={(e) => setIsAnonymous(e.target.checked)}
+          style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+        />
+        <label htmlFor="anonymous-checkbox" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted)', cursor: 'pointer' }}>
+          Submit review anonymously
+        </label>
+      </div>
+
+      {/* Comment Input */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)' }}>Write a Comment</label>
+        <textarea
+          placeholder="What did you like or dislike about this course? Are there areas for improvement?"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          style={{
+            width: '100%',
+            height: '120px',
+            background: 'var(--glass-inner-darker)',
+            border: '1px solid var(--border)',
+            borderRadius: '12px',
+            padding: '16px',
+            color: 'var(--text-main)',
+            outline: 'none',
+            resize: 'none',
+            fontSize: '13.5px',
+            fontFamily: 'inherit',
+            lineHeight: 1.6
+          }}
+        />
+      </div>
+
+      {error && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'rgba(244, 63, 94, 0.08)', color: '#f43f5e', borderRadius: '8px', fontSize: '13px', fontWeight: 500, maxWidth: '400px' }}>
+          <AlertCircle size={16} /> {error}
+        </div>
+      )}
+
+      <button
+        type="submit"
+        className="btn-primary"
+        disabled={submitting || !comment.trim()}
+        style={{ alignSelf: 'flex-start', opacity: (submitting || !comment.trim()) ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: '8px' }}
+      >
+        {submitting ? 'Submitting...' : 'Submit Feedback'}
+      </button>
+    </form>
+  );
+};
+
 const QuizComponent = ({ questions, courseId }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
@@ -148,7 +404,6 @@ const QuizComponent = ({ questions, courseId }) => {
   };
 
   if (showResult) {
-    // Auto Grading Logic: Pass if score >= 50% for mock purposes
     const passed = score >= questions.length * 0.5;
 
     return (
@@ -157,14 +412,14 @@ const QuizComponent = ({ questions, courseId }) => {
         <p style={{ fontSize: '18px', color: 'var(--text-muted)', marginBottom: '24px' }}>
           Your final score: <span style={{ color: passed ? '#10b981' : '#f43f5e', fontWeight: 700 }}>{score}</span> / {questions.length}
         </p>
-        
+
         {passed ? (
           <div style={{ background: 'var(--glass-inner)', padding: '24px', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.3)' }}>
-             <p style={{ color: '#10b981', marginBottom: '8px', fontWeight: 600, fontSize: '18px' }}>🎉 Congratulations, you passed!</p>
-             <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '14px' }}>Your progress has been successfully tracked in your profile.</p>
-             <Link to={`/certificate/${courseId || 'demo'}`} className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-               Generate Certificate
-             </Link>
+            <p style={{ color: '#10b981', marginBottom: '8px', fontWeight: 600, fontSize: '18px' }}>🎉 Congratulations, you passed!</p>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '14px' }}>Your progress has been successfully tracked in your profile.</p>
+            <Link to={`/certificate/${courseId || 'demo'}`} className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+              Generate Certificate
+            </Link>
           </div>
         ) : (
           <div>
@@ -187,12 +442,12 @@ const QuizComponent = ({ questions, courseId }) => {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px' }}>
         {questions[currentQuestion].options.map((option, index) => (
-          <div 
+          <div
             key={index}
             onClick={() => handleOptionSelect(index)}
-            style={{ 
-              padding: '16px 20px', 
-              borderRadius: '12px', 
+            style={{
+              padding: '16px 20px',
+              borderRadius: '12px',
               cursor: 'pointer',
               background: selectedOption === index ? 'rgba(99, 102, 241, 0.15)' : 'var(--glass-inner-darker)',
               border: selectedOption === index ? '1px solid var(--primary)' : '1px solid var(--border)',
@@ -205,8 +460,8 @@ const QuizComponent = ({ questions, courseId }) => {
         ))}
       </div>
 
-      <button 
-        className="btn-primary" 
+      <button
+        className="btn-primary"
         onClick={handleNext}
         disabled={selectedOption === null}
         style={{ width: '100%', opacity: selectedOption === null ? 0.5 : 1 }}
@@ -217,68 +472,12 @@ const QuizComponent = ({ questions, courseId }) => {
   );
 };
 
-const AssignmentComponent = () => {
-  const [submission, setSubmission] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (submission.trim() !== '') {
-      setSubmitted(true);
-    }
-  };
-
-  if (submitted) {
-    return (
-      <div style={{ textAlign: 'center', padding: '32px', background: 'var(--glass-inner)', borderRadius: '12px', border: '1px solid var(--border)' }}>
-        <h3 style={{ fontSize: '24px', marginBottom: '12px', color: '#f59e0b' }}>Pending Manual Grading</h3>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>Your assignment has been submitted successfully and is currently in the queue for manual grading by your instructor.</p>
-        <div style={{ display: 'inline-block', padding: '6px 16px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', borderRadius: '20px', fontSize: '14px', fontWeight: 600 }}>
-          Status: In Review
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <h3 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '16px' }}>Module 1 Assignment: Component Architecture</h3>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.6 }}>
-        Build a reusable `Modal` component using React Portals and the Compound Component pattern. Ensure it handles focus trapping and keyboard accessibility (ESC to close). Provide a link to your CodeSandbox or GitHub repository below.
-      </p>
-      
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <textarea 
-          placeholder="Paste your repository URL or assignment text here..." 
-          value={submission}
-          onChange={(e) => setSubmission(e.target.value)}
-          style={{ 
-            width: '100%', 
-            height: '150px', 
-            background: 'var(--glass-inner-darker)', 
-            border: '1px solid var(--border)', 
-            borderRadius: '12px', 
-            padding: '16px', 
-            color: 'var(--text-main)', 
-            outline: 'none', 
-            resize: 'none',
-            fontFamily: 'inherit'
-          }}
-        />
-        <button type="submit" className="btn-primary" disabled={submission.trim() === ''} style={{ alignSelf: 'flex-start', opacity: submission.trim() === '' ? 0.5 : 1 }}>
-          Submit Assignment
-        </button>
-      </form>
-    </div>
-  );
-};
-
 const Tab = ({ label, active, onClick }) => (
-  <div 
+  <div
     onClick={onClick}
-    style={{ 
-      paddingBottom: '16px', 
-      color: active ? 'var(--primary)' : 'var(--text-muted)', 
+    style={{
+      paddingBottom: '16px',
+      color: active ? 'var(--primary)' : 'var(--text-muted)',
       fontWeight: active ? 600 : 500,
       borderBottom: active ? '2px solid var(--primary)' : '2px solid transparent',
       cursor: 'pointer',
